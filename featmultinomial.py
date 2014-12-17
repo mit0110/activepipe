@@ -8,8 +8,8 @@ def _sanitize_logarithms(X):
     """
 
 
-class FeatMultinomalNB(MultinomialNB):
-    """A MultinomialNB classfier that can be trained using labeled features.
+class FeatMultinomialNB(MultinomialNB):
+    """A MultinomialNB classifier that can be trained using labeled features.
     """
 
     def fit(self, X, Y, sample_weight=None, features=None):
@@ -39,13 +39,13 @@ class FeatMultinomalNB(MultinomialNB):
         if features != None:
             self.alpha = features
         self.instance_num = X.shape[0]
-        return_value = super(FeatMultinomalNB, self).fit(X, Y, sample_weight)
+        return_value = super(FeatMultinomialNB, self).fit(X, Y, sample_weight)
         self._information_gain()
         return return_value
 
     def _count(self, X, Y):
-        super(FeatMultinomalNB, self)._count(X, Y)
-        # Number of intances with class j and precense of feature k
+        super(FeatMultinomialNB, self)._count(X, Y)
+        # Number of instances with class j and presence of feature k
         # shape class, feat.
         self.count_feat_and_class = safe_sparse_dot(Y.T, (X > 0))
 

@@ -1,4 +1,4 @@
-from featmultinomial import FeatMultinomalNB
+from featmultinomial import FeatMultinomialNB
 from feature_extraction import get_features
 
 
@@ -16,7 +16,7 @@ default_config = {
     'number_of_features': 30,
 
     # Classifier
-    'classifier': FeatMultinomalNB(),
+    'classifier': FeatMultinomialNB(),
 
     # Features
     'feature_boost': 0.5,

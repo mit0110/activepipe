@@ -3,13 +3,16 @@ BaseExperiment class and default functions to run the activepipe bootstraps.
 """
 import time
 from termcolor import colored
+from visualization import Printer
+
+printer = Printer()
 
 
 def get_labeled_instance(instance, classes):
     """Propose to the user an instance and a list of classes to label.
 
     Params:
-        instance: the representation in natural languange of an instance to be
+        instance: the representation in natural language of an instance to be
         labeled by the user.
         classes: a list of classes names in order as possible labels for the
         instance.
@@ -18,8 +21,8 @@ def get_labeled_instance(instance, classes):
         A string. One of the classes names listed in the argument classes,
         stop to finish the bootstrap or train to retrain the classifier.
     """
-    print '*' * 79, "\nWhat is the correct template? Write the number or STOP\n"
-    print colored(instance, "red", "on_white", attrs=["bold"])
+    printer.show_instruction("What is the correct template? Write the number or STOP")
+    printer.info(instance, bold=True)
     message = "{} - {}"
     for (counter, class_name) in enumerate(classes):
         print message.format(counter, class_name)
@@ -29,29 +32,28 @@ def get_labeled_instance(instance, classes):
         prediction = classes[line]
     except (ValueError, IndexError):
         return line
-    print colored("Adding result", "green")
+    printer.info_success("Adding result")
     return prediction
 
 
 def get_class(classes_list):
-    print '*' * 79, "\nChoose a class number to label its features"
+    printer.show_instruction("Choose a class number to label its features")
     for index, class_ in enumerate(classes_list):
         print index, class_
     line = raw_input(">>> ")
     try:
         line = int(line)
     except ValueError:
-        print 'Choose a number'
+        printer.info_warning('Choose a number')
         return line if (line == 'stop' or line == 'train') else None
     if line < 0 or line >= len(classes_list):
-        print 'Choose a number between 0 and ', len(classes_list)
+        printer.info_warning('Choose a number between 0 and ' + str(len(classes_list)))
         return False
     return classes_list[line]
 
 
 def get_labeled_features(class_name, features):
-    print '*' * 79
-    print "Insert the asociated feature numbers separated by a blank space."
+    printer.show_instruction("Insert the associated feature numbers separated by a blank space.")
     print class_name
     for number, feature in enumerate(features):
         print number, feature
@@ -75,7 +77,7 @@ class BaseExperiment(object):
     A new experiment must define the method run and the metrics as minimum.
 
     Attributes:
-        pipe_class: The class to instanciate the active learn pipe.
+        pipe_class: The class to instantiate the active learn pipe.
 
         get_labeled_instance: A function. Can be used as a parameter for the
         instance bootstrap of the active pipe.
@@ -89,10 +91,10 @@ class BaseExperiment(object):
         experiment_config: A dictionary with the default configuration to
         run an experiment.
 
-        metrics: A list with Metric instances that must be obteined after
+        metrics: A list with Metric instances that must be obtained after
         running the experiment from the session file.
 
-        instance_name: A string. The name that uniquely indentifies an instance
+        instance_name: A string. The name that uniquely identifies an instance
         of experiment. It will be used to create the files for the session
         and for the result.
     """
@@ -113,7 +115,7 @@ class BaseExperiment(object):
         self.number = None
 
     def run(self):
-        """Runs the bootstrap cicles of the ActivePipeline."""
+        """Runs the bootstrap cycles of the ActivePipeline."""
         raise NotImplementedError
 
     def get_metrics(self):

@@ -8,7 +8,6 @@ from sklearn.metrics import (precision_score, classification_report,
                              confusion_matrix)
 from sklearn.utils.extmath import safe_sparse_dot
 from sklearn.preprocessing import normalize
-from termcolor import colored
 
 from defaults import default_config
 
@@ -32,7 +31,7 @@ class ActivePipeline(object):
         values. -1 indicates that the feature was never asked to the user for
         that class, 0 indicates no relation, and 1 indicates relation between
         feature and class. The feature corpus will be loaded from the file
-        self.feature_label_f intruduced by the config, and will be used only
+        self.feature_label_f introduced by the config, and will be used only
         during user emulation. It can be updated using the function
         label_feature_corpus.
 
@@ -54,7 +53,7 @@ class ActivePipeline(object):
         Args:
             session_filename: Optional. The name of a file storing a session
             that will be loaded using the method load_session.
-            emulate: a boolean. Will set the attribute emulate acordinly.
+            emulate: a boolean. Will set the attribute emulate accordingly.
             **kwargs: the configuration for the pipe. Each parameters passed
             will be converted to an attribute of the pipe. The minimum
             configuration possible is set in the defaults file, and each value
@@ -62,6 +61,9 @@ class ActivePipeline(object):
         """
         self.session_filename = session_filename
         self.emulate = emulate
+        self.get_next_instance_function = None
+        self._build_feature_boost_function = None
+        self.u_clasifications = None
         self._set_config(kwargs)
         self._get_corpus()
         self._get_feature_corpus()
@@ -102,13 +104,16 @@ class ActivePipeline(object):
 
     def _build_feature_boost(self):
         """Creates the user_features np.array with defaults values."""
-        self.alpha = self.classifier.alpha
-        self.n_class, self.n_feat = self.classifier.feature_log_prob_.shape
-        self.user_features = np.array([[self.alpha] * self.n_feat] * self.n_class)
-        if self.emulate:
-            self.asked_features = self.feature_corpus == 0
+        if self._build_feature_boost_function is not None:
+            self._build_feature_boost_function(self)
         else:
-            self.asked_features = self.user_features != self.alpha # False
+            self.alpha = self.classifier.alpha
+            self.n_class, self.n_feat = self.classifier.feature_log_prob_.shape
+            self.user_features = np.array([[self.alpha] * self.n_feat] * self.n_class)
+            if self.emulate:
+                self.asked_features = self.feature_corpus == 0
+            else:
+                self.asked_features = self.user_features != self.alpha # False
 
     def _train(self):
         """Fit the classifier with the training set plus the new vectors and
@@ -145,7 +150,7 @@ class ActivePipeline(object):
         self._retrained = True
 
     def _expectation_maximization(self):
-        """Performs one cicle of expectation maximization.
+        """Performs one cycle of expectation maximization.
 
         Re estimates the parameters of the multinomial (class_prior and
         feature_log_prob_) to maximize the expected likelihood. The likelihood
@@ -209,124 +214,11 @@ class ActivePipeline(object):
     def predict(self, question):
         return self.classifier.predict(question)
 
-    def instance_bootstrap(self, get_labeled_instance, max_iterations=None):
-        """Presents a new question to the user until the answer is 'stop'.
-
-        Args:
-            get_labeled_instance: A function that takes the representation of
-            an instance and a list of possible classes. Returns the correct
-            class for the instance.
-            max_iterations: Optional. An interger. The cicle will execute at
-            most max_iterations times if the user does not enter stop before.
-
-        Returns:
-            The number of instances the user has labeled.
-        """
-        it = 0
-        result = 0
-        while ((not max_iterations or it < max_iterations) and
-              len(self.unlabeled_corpus)):
-            it += 1
-            new_index = self.get_next_instance()
-            try:
-                new_instance = self.unlabeled_corpus.instances[new_index]
-            except IndexError:
-                import ipdb; ipdb.set_trace()
-            representation = self.unlabeled_corpus.representations[new_index]
-            if (self.emulate and
-                self.unlabeled_corpus.primary_targets[new_index]):
-                prediction = self.unlabeled_corpus.primary_targets[new_index]
-                message = "Emulation: Adding instance {}, {}".format(
-                    representation, prediction
-                )
-                print colored(message, "red")
-            if (not self.emulate or
-                not self.unlabeled_corpus.primary_targets[new_index]):
-                classes = self._most_probable_classes(new_instance)
-                prediction = get_labeled_instance(representation, classes)
-            if prediction == 'stop':
-                break
-            if prediction == 'train':
-                self._train()
-                self._expectation_maximization()
-                continue
-            # if prediction == 'other':
-            #     self.unlabeled_corpus.pop_instance(new_index)
-            #     continue
-
-            self.new_instances += 1
-            result += 1
-            instance, targets, r = self.unlabeled_corpus.pop_instance(new_index)
-            self.user_corpus.add_instance(
-                instance, [prediction] + targets, r
-            )
-
-        return result
-
-    def feature_bootstrap(self, get_class, get_labeled_features,
-                          max_iterations=None):
-        """Presents a class and possible features until the prediction is stop.
-
-        Args:
-            get_class: A function that receives a list of classes and returns
-            one of them. Can return None in case of error.
-            get_labeled_features: A function that receives a class and a list
-            of features. It must return a list of features associated with the
-            class. Can return None in case of error.
-            max_iterations: Optional. An interger. The cicle will execute at
-            most max_iterations times if the user does not enter stop before.
-
-        Returns:
-            The number of features the user has labeled.
-        """
-        result = 0
-        while not max_iterations or result < max_iterations:
-            class_name = get_class(self.get_class_options())
-            if not class_name:
-                continue
-            if class_name == 'stop':
-                break
-            if class_name == 'train':
-                self._train()
-                self._expectation_maximization()
-                continue
-            class_number = self.classes.index(class_name)
-            feature_numbers = self.get_next_features(class_number)
-            e_prediction = []
-            prediction = []
-            if self.emulate:
-                e_prediction = [f for f in feature_numbers
-                                if self.feature_corpus[class_number][f] == 1]
-                feature_numbers = [f for f in feature_numbers
-                                   if f not in e_prediction]
-                print "Adding {0} features from corpus for class {1}".format(
-                    len(e_prediction), class_name
-                )
-            if feature_numbers:
-                feature_names = [self.training_corpus.get_feature_name(pos)
-                                 for pos in feature_numbers]
-                prediction = get_labeled_features(class_name, feature_names)
-                if not prediction and not e_prediction:
-                    continue
-                if prediction == 'stop':
-                    break
-                if prediction == 'train':
-                    self._train()
-                    self._expectation_maximization()
-                    continue
-                prediction = [feature_numbers[feature_names.index(f)]
-                              for f in prediction]
-            self.handle_feature_prediction(class_number,
-                                           feature_numbers + e_prediction,
-                                           prediction + e_prediction)
-            result += len(prediction + e_prediction)
-        return result
-
     def handle_feature_prediction(self, class_number, full_set, prediction):
         """Adds the new information from prediction to user_features.
 
         Args:
-            class_number: an interger. The position of the class in self.classes
+            class_number: an integer. The position of the class in self.classes
             full_set: a list of positions of features that was given to the
             user.
             prediction: a list of positions of features selected for the class.
@@ -366,21 +258,24 @@ class ActivePipeline(object):
         Returns:
             The index of an instance selected from the unlabeled_corpus.
         """
-        if len(self.unlabeled_corpus) == 0:
-            return None
-        if self._retrained:
-            self.u_clasifications = self.classifier.predict_proba(
-                self.unlabeled_corpus.instances
-            )
-            entropy = self.u_clasifications * np.log(self.u_clasifications)
-            entropy = entropy.sum(axis=1)
-            entropy *= -1
-            self.unlabeled_corpus.add_extra_info('entropy', entropy.tolist())
+        if self.get_next_instance_function is not None:
+            self.get_next_instance_function(self)
+        else:
+            if len(self.unlabeled_corpus) == 0:
+                return None
+            if self._retrained:
+                self.u_clasifications = self.classifier.predict_proba(
+                    self.unlabeled_corpus.instances
+                )
+                entropy = self.u_clasifications * np.log(self.u_clasifications)
+                entropy = entropy.sum(axis=1)
+                entropy *= -1
+                self.unlabeled_corpus.add_extra_info('entropy', entropy.tolist())
 
-            self._retrained = False
-        # Select the instance
-        min_entropy = min(self.unlabeled_corpus.extra_info['entropy'])
-        return self.unlabeled_corpus.extra_info['entropy'].index(min_entropy)
+                self._retrained = False
+            # Select the instance
+            min_entropy = min(self.unlabeled_corpus.extra_info['entropy'])
+            return self.unlabeled_corpus.extra_info['entropy'].index(min_entropy)
 
     def get_class_options(self):
         """Sorts a list of classes to present to the user by relevance.
@@ -396,7 +291,7 @@ class ActivePipeline(object):
         """Selects a  and a list of features to be sent to the oracle.
 
         Args:
-            class_number: An interger. The position of the class where the
+            class_number: An integer. The position of the class where the
             features will belong in the np.array self.classes.
 
         Returns:
@@ -450,7 +345,7 @@ class ActivePipeline(object):
         """
         Returns:
             A sklearn.metrics.classification_report on the performance
-            of the cassifier over the test corpus.
+            of the classifier over the test corpus.
         """
         predicted_targets = self.predict(self.test_corpus.instances)
         return classification_report(self.test_corpus.primary_targets,

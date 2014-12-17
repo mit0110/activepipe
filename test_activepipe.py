@@ -71,9 +71,9 @@ class TestActivePipe(unittest.TestCase):
         """
         expected = np.array([[0.32982792, 0.30688337, 0.36328872],
                              [0.42899408, 0.21597633, 0.35502959]])
-        with mock.patch('featmultinomial.FeatMultinomalNB.predict_proba',
+        with mock.patch('featmultinomial.FeatMultinomialNB.predict_proba',
                         return_value=self.instance_class_prob) as mock_pred:
-            with mock.patch('featmultinomial.FeatMultinomalNB.instance_proba',
+            with mock.patch('featmultinomial.FeatMultinomialNB.instance_proba',
                             return_value=self.instance_prob) as mock_inst_p:
                 self.pipe.training_corpus = Corpus()
                 self.pipe._expectation_maximization()
@@ -90,9 +90,9 @@ class TestActivePipe(unittest.TestCase):
         """
         expected = np.array([0.3609375, 0.6390625])
 
-        with mock.patch('featmultinomial.FeatMultinomalNB.predict_proba',
+        with mock.patch('featmultinomial.FeatMultinomialNB.predict_proba',
                         return_value=self.instance_class_prob) as mock_pred:
-            with mock.patch('featmultinomial.FeatMultinomalNB.instance_proba',
+            with mock.patch('featmultinomial.FeatMultinomialNB.instance_proba',
                             return_value=self.instance_prob) as mock_inst_p:
                 self.pipe.training_corpus = Corpus()
                 self.pipe._expectation_maximization()
@@ -114,9 +114,9 @@ class TestActivePipe(unittest.TestCase):
         expected = np.array([[0.31359719, 0.3384934, 0.34790935],
                              [0.31659388, 0.421397379, 0.262008733]])
         instance_prob_fun = lambda s, x: self.instance_prob[:x.shape[0]]
-        with mock.patch('featmultinomial.FeatMultinomalNB.predict_proba',
+        with mock.patch('featmultinomial.FeatMultinomialNB.predict_proba',
                         return_value=self.instance_class_prob) as mock_pred:
-            with mock.patch('featmultinomial.FeatMultinomalNB.instance_proba',
+            with mock.patch('featmultinomial.FeatMultinomialNB.instance_proba',
                             new=instance_prob_fun) as mock_inst_p:
                 self.pipe._expectation_maximization()
                 np.testing.assert_array_almost_equal(
@@ -132,9 +132,9 @@ class TestActivePipe(unittest.TestCase):
         """
         expected = np.array([0.725357142, 0.27464285714])
         instance_prob_fun = lambda s, x: self.instance_prob[:x.shape[0]]
-        with mock.patch('featmultinomial.FeatMultinomalNB.predict_proba',
+        with mock.patch('featmultinomial.FeatMultinomialNB.predict_proba',
                         return_value=self.instance_class_prob) as mock_pred:
-            with mock.patch('featmultinomial.FeatMultinomalNB.instance_proba',
+            with mock.patch('featmultinomial.FeatMultinomialNB.instance_proba',
                             new=instance_prob_fun) as mock_inst_p:
                 self.pipe._expectation_maximization()
                 np.testing.assert_array_almost_equal(
@@ -235,7 +235,7 @@ class TestActivePipe(unittest.TestCase):
         -E(4) = 0.1*log(0.1) + 0.9*log(0.9) = -0.3250829733914482
         -E(5) = 0.8*log(0.8) + 0.2*log(0.2) = -0.5004024235381879
         """
-        with mock.patch('featmultinomial.FeatMultinomalNB.predict_proba',
+        with mock.patch('featmultinomial.FeatMultinomialNB.predict_proba',
                         return_value=self.instance_class_prob) as mock_method:
             indexes = []
             while len(self.pipe.unlabeled_corpus) != 0:
