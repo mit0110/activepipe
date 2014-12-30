@@ -36,7 +36,7 @@ class FeatMultinomialNB(MultinomialNB):
         self : object
             Returns self.
         """
-        if features != None:
+        if features is not None:
             self.alpha = features
         self.instance_num = X.shape[0]
         return_value = super(FeatMultinomialNB, self).fit(X, Y, sample_weight)
