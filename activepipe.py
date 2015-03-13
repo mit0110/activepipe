@@ -385,10 +385,10 @@ class ActivePipeline(object):
             return False
 
         f = open(filename, 'w')
-        to_save = {'training_corpus': self.training_corpus,
-                   'unlabeled_corpus': self.unlabeled_corpus,
-                   'user_corpus': self.user_corpus,
-                   'user_features': self.user_features,
+        to_save = {'training_corpus': None,  # self.training_corpus,
+                   'unlabeled_corpus': None,  # self.unlabeled_corpus,
+                   'user_corpus': None,  # self.user_corpus,
+                   'user_features': None,  # self.user_features,
                    'recorded_precision': self.recorded_precision,
                    'asked_features': (self.asked_features
                                       if hasattr(self, 'asked_features')

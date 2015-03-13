@@ -129,7 +129,8 @@ def instance_bootstrap(activepipe, get_labeled_instance, max_iterations=None):
             break
         if prediction == 'train':
             activepipe._train()
-            activepipe._expectation_maximization()
+            if activepipe.can_run_em:
+                activepipe._expectation_maximization()
             continue
 
         activepipe.new_instances += 1
