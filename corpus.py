@@ -1,6 +1,6 @@
 import pickle
-import scipy.sparse.csr
 
+import scipy
 from scipy.sparse import vstack, csr_matrix
 from scipy.stats import mode
 

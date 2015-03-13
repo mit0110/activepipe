@@ -26,7 +26,6 @@ class Printer(object):
         print msg
 
 
-
 def feature_bootstrap(activepipe, get_class, get_labeled_features,
                       max_iterations=None):
     """Presents a class and possible features until the prediction is stop.
@@ -132,9 +131,6 @@ def instance_bootstrap(activepipe, get_labeled_instance, max_iterations=None):
             activepipe._train()
             activepipe._expectation_maximization()
             continue
-        # if prediction == 'other':
-        #     self.unlabeled_corpus.pop_instance(new_index)
-        #     continue
 
         activepipe.new_instances += 1
         result += 1

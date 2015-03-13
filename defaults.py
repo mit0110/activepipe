@@ -1,8 +1,5 @@
 from featmultinomial import FeatMultinomialNB
-from feature_extraction import get_features
 
-
-MAX_NGRAMS = 3
 
 default_config = {
     # Corpus files

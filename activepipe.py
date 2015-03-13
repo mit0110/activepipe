@@ -98,9 +98,12 @@ class ActivePipeline(object):
 
     def _get_feature_corpus(self):
         """Loads the feature corpus from self.feature_corpus_f"""
-        f = open(self.feature_corpus_f, 'r')
-        self.feature_corpus = pickle.load(f)
-        f.close()
+        if self.feature_corpus_f:
+            f = open(self.feature_corpus_f, 'r')
+            self.feature_corpus = pickle.load(f)
+            f.close()
+        else:
+            self.feature_corpus = None
 
     def _build_feature_boost(self):
         """Creates the user_features np.array with defaults values."""
@@ -309,18 +312,6 @@ class ActivePipeline(object):
         def key_fun(i): return -1*self.classifier.feat_information_gain[i]
         selected_f_pos.sort(key=key_fun)
         return selected_f_pos
-        # selected_f_pos = self.classifier.feat_information_gain.argsort()[:-100:-1]
-        # coocurrence_with_class = []
-        # for feat_pos in selected_f_pos:
-        #     coocurrence_with_class.append(
-        #         self.classifier.feature_count_[class_number][feat_pos]
-        #     )
-        # coocurrence_with_class = np.array(coocurrence_with_class)
-        # coocurrences_order = coocurrence_with_class.argsort()
-        # res = [selected_f_pos[i] for i in coocurrences_order[::-1]
-        #        if self.user_features[class_number][selected_f_pos[i]] ==
-        #           self.classifier.alpha]
-        # return np.array(res[:self.number_of_features])
 
     def evaluate_test(self):
         """Evaluates the classifier with the testing set.
