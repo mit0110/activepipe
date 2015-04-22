@@ -1,6 +1,9 @@
 import pickle
+import random
 import scipy.sparse.csr
 
+from collections import defaultdict
+from collections import Counter
 from scipy.sparse import vstack, csr_matrix
 from scipy.stats import mode
 
@@ -30,6 +33,11 @@ class Corpus(object):
         self.full_targets = []
         self._features_vectorizer = None
         self.extra_info = {}
+
+    def __len__(self):
+        if isinstance(self.instances, list):
+            return len(self.instances)
+        return self.instances.shape[0]
 
     def load_from_file(self, filename):
         f = open(filename, 'r')
@@ -144,11 +152,6 @@ class Corpus(object):
             v.pop(index)
         return (row, target, representation)
 
-    def __len__(self):
-        if isinstance(self.instances, list):
-            return len(self.instances)
-        return self.instances.shape[0]
-
     def concetenate_corpus(self, new_corpus):
         """Adds all the elements of new_corpus into the current corpus.
 
@@ -185,3 +188,45 @@ class Corpus(object):
                                  for i in self.extra_info.values()],
                                 True)
         return len_components and len_extra_info
+
+    def class_info(self):
+        """Returns a dictionary with the class distribution of the corpus.
+
+        Returns:
+            A dictionary mapping the targets in the corpus to the number
+            of instances of that class encountered. The counting is made from
+            the primary_targets array.
+        """
+        return Counter(self.primary_targets)
+
+    def split(self, partition_sizes):
+        """Returns Corpus instances of the given sizes randomly selected.
+
+        Args:
+            partition_sizes: a list of integers. Each number represents
+            the size of one Corpus instance.
+
+        Returns:
+            A list of Corpus instances. If the size of the partitions exceeds
+            the total size of the corpus, None will be returned.
+        """
+        result = []
+
+        total = sum(partition_sizes)
+        try:
+            selected_indexes = random.sample(range(len(self)), total)
+        except ValueError:
+            return None
+        random.shuffle(selected_indexes)
+        last_position = 0
+        for size in partition_sizes:
+            new_corpus = Corpus()
+            for index in selected_indexes[last_position:last_position+size]:
+                new_corpus.add_instance(self.instances[index],
+                                        self.full_targets[index],
+                                        self.representations[index])
+            new_corpus.calculate_primary_targets()
+            result.append(new_corpus)
+            last_position += size
+
+        return result
