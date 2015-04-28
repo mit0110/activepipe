@@ -1,4 +1,6 @@
 # encoding: utf-8
+"""Sample visualization module to use the activepipe."""
+
 
 from termcolor import colored
 
@@ -135,12 +137,7 @@ def instance_bootstrap(activepipe, get_labeled_instance, max_iterations=None):
         # if prediction == 'other':
         #     self.unlabeled_corpus.pop_instance(new_index)
         #     continue
-
-        activepipe.new_instances += 1
         result += 1
-        instance, targets, r = activepipe.unlabeled_corpus.pop_instance(new_index)
-        activepipe.user_corpus.add_instance(
-            instance, [prediction] + targets, r
-        )
+        activepipe.add_label(new_index, prediction)
 
     return result

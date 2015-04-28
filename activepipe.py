@@ -54,6 +54,7 @@ class ActivePipeline(object):
             session_filename: Optional. The name of a file storing a session
             that will be loaded using the method load_session.
             emulate: a boolean. Will set the attribute emulate accordingly.
+
             **kwargs: the configuration for the pipe. Each parameters passed
             will be converted to an attribute of the pipe. The minimum
             configuration possible is set in the defaults file, and each value
@@ -66,7 +67,6 @@ class ActivePipeline(object):
         self.u_clasifications = None
         self._set_config(kwargs)
         self._get_corpus()
-        self._get_feature_corpus()
         self.recorded_precision = []
         self.load_session()
         self.user_features = None
@@ -74,6 +74,7 @@ class ActivePipeline(object):
         self.new_features = 0
         self.classes = []
         self._train()
+        self._get_feature_corpus()
         self._build_feature_boost()
 
     def _set_config(self, config):
@@ -85,22 +86,24 @@ class ActivePipeline(object):
                 setattr(self, key, value)
 
     def _get_corpus(self):
-        self.training_corpus = Corpus()
-        self.training_corpus.load_from_file(self.training_corpus_f)
+        self.training_corpus = Corpus.load_from_file(self.training_corpus_f)
 
-        self.unlabeled_corpus = Corpus()
-        self.unlabeled_corpus.load_from_file(self.u_corpus_f)
+        self.unlabeled_corpus = Corpus.load_from_file(self.u_corpus_f)
 
-        self.test_corpus = Corpus()
-        self.test_corpus.load_from_file(self.test_corpus_f)
+        self.test_corpus = Corpus.load_from_file(self.test_corpus_f)
 
         self.user_corpus = Corpus()
 
     def _get_feature_corpus(self):
-        """Loads the feature corpus from self.feature_corpus_f"""
-        f = open(self.feature_corpus_f, 'r')
-        self.feature_corpus = pickle.load(f)
-        f.close()
+        """Loads feature corpus from self.feature_corpus_f or creates empty one.
+        """
+        self.n_class, self.n_feat = self.classifier.feature_log_prob_.shape
+        try:
+            f = open(self.feature_corpus_f, 'r')
+            self.feature_corpus = pickle.load(f)
+            f.close()
+        except IOError:
+            self.feature_corpus = np.zeros((self.n_class, self.n_feat))
 
     def _build_feature_boost(self):
         """Creates the user_features np.array with defaults values."""
@@ -108,12 +111,21 @@ class ActivePipeline(object):
             self._build_feature_boost_function(self)
         else:
             self.alpha = self.classifier.alpha
-            self.n_class, self.n_feat = self.classifier.feature_log_prob_.shape
-            self.user_features = np.array([[self.alpha] * self.n_feat] * self.n_class)
+            # self.user_features = np.array([[self.alpha] * self.n_feat] * self.n_class)
+            self.user_features = None
             if self.emulate:
                 self.asked_features = self.feature_corpus == 0
             else:
                 self.asked_features = self.user_features != self.alpha # False
+
+    def add_label(self, instance_index, label):
+        """Adds the instance as labeled with the corresponding label."""
+        self.new_instances += 1
+        instance, targets, representation = \
+            self.unlabeled_corpus.pop_instance(instance_index)
+        self.user_corpus.add_instance(
+            instance, [label] + targets, representation
+        )
 
     def _train(self):
         """Fit the classifier with the training set plus the new vectors and
@@ -132,7 +144,7 @@ class ActivePipeline(object):
                 self.classifier.fit(self.training_corpus.instances,
                                     self.training_corpus.primary_targets,
                                     features=self.user_features)
-        except ValueError:
+        except ValueError, AttributeError:
             import ipdb; ipdb.set_trace()
         self.recorded_precision.append({
             'testing_precision' : self.evaluate_test(),
@@ -275,7 +287,9 @@ class ActivePipeline(object):
                 self._retrained = False
             # Select the instance
             min_entropy = min(self.unlabeled_corpus.extra_info['entropy'])
-            return self.unlabeled_corpus.extra_info['entropy'].index(min_entropy)
+            index = self.unlabeled_corpus.extra_info['entropy'].index(min_entropy)
+            print min_entropy, index
+            return index
 
     def get_class_options(self):
         """Sorts a list of classes to present to the user by relevance.
@@ -379,7 +393,7 @@ class ActivePipeline(object):
         pickle.dump(self.feature_corpus, f)
         f.close()
 
-    def save_session(self, filename):
+    def save_session(self, filename, save_corpus=True):
         """Saves the instances and targets introduced by the user in filename.
 
         Writes a pickle tuple in the file that can be recovered using the
@@ -394,17 +408,18 @@ class ActivePipeline(object):
             return False
 
         f = open(filename, 'w')
-        to_save = {'training_corpus': self.training_corpus,
-                   'unlabeled_corpus': self.unlabeled_corpus,
-                   'user_corpus': self.user_corpus,
-                   'user_features': self.user_features,
-                   'recorded_precision': self.recorded_precision,
+        to_save = {'recorded_precision': self.recorded_precision,
                    'asked_features': (self.asked_features
                                       if hasattr(self, 'asked_features')
                                       else None),
                    'classification_report': self.get_report(),
                    'classes': self.classes
                   }
+        if save_corpus:
+            to_save['training_corpus'] = self.training_corpus,
+            to_save['unlabeled_corpus'] = self.unlabeled_corpus,
+            to_save['user_corpus'] = self.user_corpus,
+            to_save['user_features'] = self.user_features,
         pickle.dump(to_save, f)
         f.close()
         return True

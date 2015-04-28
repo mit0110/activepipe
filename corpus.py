@@ -39,12 +39,15 @@ class Corpus(object):
             return len(self.instances)
         return self.instances.shape[0]
 
-    def load_from_file(self, filename):
+    @classmethod
+    def load_from_file(cls, filename):
         f = open(filename, 'r')
-        (self.instances, self.full_targets, self.representations,
-            self._features_vectorizer) = pickle.load(f)
-        self.calculate_primary_targets()
+        corpus = cls()
+        (corpus.instances, corpus.full_targets, corpus.representations,
+            corpus._features_vectorizer) = pickle.load(f)
+        corpus.calculate_primary_targets()
         f.close()
+        return corpus
 
     def save_to_file(self, filename):
         f = open(filename, 'w')
@@ -137,11 +140,12 @@ class Corpus(object):
             representation.
         """
         row = self.instances.getrow(index)
-        m1 = self.instances[:index]
+        if index:
+            m1 = self.instances[:index]
         m2 = self.instances[index+1:]
-        if m1.shape[0] and m2.shape[0]:
+        if index and m1.shape[0] and m2.shape[0]:
             self.instances = vstack((m1, m2), format='csr')
-        elif m1.shape[0]:
+        elif index and m1.shape[0]:
             self.instances = m1
         else:
             self.instances = m2
@@ -203,7 +207,7 @@ class Corpus(object):
         """Returns Corpus instances of the given sizes randomly selected.
 
         Args:
-            partition_sizes: a list of integers. Each number represents
+            partition_sizes: an iterable of integers. Each number represents
             the size of one Corpus instance.
 
         Returns:
