@@ -1,8 +1,5 @@
 from featmultinomial import FeatMultinomialNB
-from feature_extraction import get_features
 
-
-MAX_NGRAMS = 3
 
 default_config = {
     # Corpus files
@@ -28,4 +25,7 @@ default_config = {
     'handle_feature_prediction': None,
     # Active learning class selection function
     'get_class_options': None,
+
+    # Run expectation maximization algorithm after training
+    'can_run_em': False
 }

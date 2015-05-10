@@ -3,10 +3,6 @@ from math import log
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.utils.extmath import safe_sparse_dot
 
-def _sanitize_logarithms(X):
-    """Changes the nan
-    """
-
 
 class FeatMultinomialNB(MultinomialNB):
     """A MultinomialNB classifier that can be trained using labeled features.

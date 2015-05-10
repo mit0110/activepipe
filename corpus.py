@@ -230,3 +230,4 @@ class Corpus(object):
             last_position += size
 
         return result
+
