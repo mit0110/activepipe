@@ -140,6 +140,7 @@ class ActivePipeline(object):
                      self.user_corpus.primary_targets),
                     features=self.user_features
                 )
+                # import ipdb; ipdb.set_trace()
             else:
                 self.classifier.fit(self.training_corpus.instances,
                                     self.training_corpus.primary_targets,
@@ -280,6 +281,7 @@ class ActivePipeline(object):
                     self.unlabeled_corpus.instances
                 )
                 entropy = self.u_clasifications * np.log(self.u_clasifications)
+                entropy = np.nan_to_num(entropy)
                 entropy = entropy.sum(axis=1)
                 entropy *= -1
                 self.unlabeled_corpus.add_extra_info('entropy', entropy.tolist())
