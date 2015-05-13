@@ -155,7 +155,8 @@ class ActivePipeline(object):
             'confusion_matrix': confusion_matrix(
                 self.test_corpus.primary_targets,
                 self.predict(self.test_corpus.instances)
-            )
+            ),
+            'entropy': self.unlabeled_corpus.extra_info.get('entropy')
         })
         self.new_instances = 0
         self.new_features = 0
