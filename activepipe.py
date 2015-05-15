@@ -161,7 +161,6 @@ class ActivePipeline(object):
         self.new_instances = 0
         self.new_features = 0
         self.classes = self.classifier.classes_.tolist()
-        self._retrained = True
 
     def _expectation_maximization(self):
         """Performs one cycle of expectation maximization.
@@ -277,21 +276,17 @@ class ActivePipeline(object):
         else:
             if len(self.unlabeled_corpus) == 0:
                 return None
-            if self._retrained:
-                self.u_clasifications = self.classifier.predict_proba(
-                    self.unlabeled_corpus.instances
-                )
-                entropy = self.u_clasifications * np.log(self.u_clasifications)
-                entropy = np.nan_to_num(entropy)
-                entropy = entropy.sum(axis=1)
-                entropy *= -1
-                self.unlabeled_corpus.add_extra_info('entropy', entropy.tolist())
+            self.u_clasifications = self.classifier.predict_proba(
+                self.unlabeled_corpus.instances
+            )
+            entropy = self.u_clasifications * np.log(self.u_clasifications)
+            entropy = np.nan_to_num(entropy)
+            entropy = entropy.sum(axis=1)
+            entropy *= -1
+            # self.unlabeled_corpus.add_extra_info('entropy', entropy.tolist())
 
-                self._retrained = False
             # Select the instance
-            min_entropy = min(self.unlabeled_corpus.extra_info['entropy'])
-            index = self.unlabeled_corpus.extra_info['entropy'].index(min_entropy)
-            print min_entropy, index
+            index = np.argmin(entropy)
             return index
 
     def get_class_options(self):
