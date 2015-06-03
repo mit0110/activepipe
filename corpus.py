@@ -1,5 +1,6 @@
 import pickle
 import random
+import numpy as np
 import scipy.sparse.csr
 
 from collections import defaultdict
@@ -201,7 +202,7 @@ class Corpus(object):
             of instances of that class encountered. The counting is made from
             the primary_targets array.
         """
-        return Counter(self.primary_targets)
+        return dict(Counter(self.primary_targets))
 
     def split(self, partition_sizes):
         """Returns Corpus instances of the given sizes randomly selected.
@@ -223,14 +224,19 @@ class Corpus(object):
             return None
         random.shuffle(selected_indexes)
         last_position = 0
-        for size in partition_sizes:
+        target_array = np.array(self.full_targets)
+        representations = np.array(self.representations)
+        for partition, size in enumerate(partition_sizes):
+            print 'Splitting corpus: Starting partition {}.'.format(partition)
             new_corpus = Corpus()
-            for index in selected_indexes[last_position:last_position+size]:
-                new_corpus.add_instance(self.instances[index],
-                                        self.full_targets[index],
-                                        self.representations[index])
+            indexes = list(sorted(
+                selected_indexes[last_position:last_position+size]))
+            new_corpus.instances = self.instances[indexes]
+            new_corpus.full_targets = target_array[indexes].tolist()
+            new_corpus.representations = representations[indexes].tolist()
             new_corpus.calculate_primary_targets()
             result.append(new_corpus)
             last_position += size
+            print 'Splitting corpus: Partition {} finised.'.format(partition)
 
         return result

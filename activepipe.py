@@ -128,8 +128,9 @@ class ActivePipeline(object):
         )
 
     def _train(self):
-        """Fit the classifier with the training set plus the new vectors and
-        features. Then performs a step of EM.
+        """Fit the classifier with the new information.
+
+        Uses the training set plus the new vectors and new features. 
         """
         try:
             if len(self.user_corpus):
@@ -140,7 +141,6 @@ class ActivePipeline(object):
                      self.user_corpus.primary_targets),
                     features=self.user_features
                 )
-                # import ipdb; ipdb.set_trace()
             else:
                 self.classifier.fit(self.training_corpus.instances,
                                     self.training_corpus.primary_targets,
@@ -150,8 +150,11 @@ class ActivePipeline(object):
         self.recorded_precision.append({
             'testing_precision' : self.evaluate_test(),
             'training_precision' : self.evaluate_training(),
+            'training_instances': len(self.training_corpus),
             'new_instances' : self.new_instances,
             'new_features' : self.new_features,
+            'tr_class_distribution': self.training_corpus.class_info(),
+            'us_class_distribution': self.user_corpus.class_info(),
             'confusion_matrix': confusion_matrix(
                 self.test_corpus.primary_targets,
                 self.predict(self.test_corpus.instances)
@@ -391,7 +394,7 @@ class ActivePipeline(object):
         pickle.dump(self.feature_corpus, f)
         f.close()
 
-    def save_session(self, filename, save_corpus=True):
+    def save_session(self, filename, save_corpus=False):
         """Saves the instances and targets introduced by the user in filename.
 
         Writes a pickle tuple in the file that can be recovered using the
