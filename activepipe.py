@@ -130,7 +130,7 @@ class ActivePipeline(object):
     def _train(self):
         """Fit the classifier with the new information.
 
-        Uses the training set plus the new vectors and new features. 
+        Uses the training set plus the new vectors and new features.
         """
         try:
             if len(self.user_corpus):
@@ -147,6 +147,7 @@ class ActivePipeline(object):
                                     features=self.user_features)
         except ValueError, AttributeError:
             import ipdb; ipdb.set_trace()
+        self.classes = self.classifier.classes_.tolist()
         self.recorded_precision.append({
             'testing_precision' : self.evaluate_test(),
             'training_precision' : self.evaluate_training(),
@@ -159,11 +160,11 @@ class ActivePipeline(object):
                 self.test_corpus.primary_targets,
                 self.predict(self.test_corpus.instances)
             ),
-            'entropy': self.unlabeled_corpus.extra_info.get('entropy')
+            'entropy': self.unlabeled_corpus.extra_info.get('entropy'),
+            'classes': self.classes
         })
         self.new_instances = 0
         self.new_features = 0
-        self.classes = self.classifier.classes_.tolist()
 
     def _expectation_maximization(self):
         """Performs one cycle of expectation maximization.
@@ -337,6 +338,24 @@ class ActivePipeline(object):
         #           self.classifier.alpha]
         # return np.array(res[:self.number_of_features])
 
+    def calculate_entropy(self):
+        """Calculates the entropy of non labeled instances.
+
+        Stores it as extra info.
+
+        Returns:
+            An array like with the calculation of entropy.
+        """
+        self.u_clasifications = self.classifier.predict_proba(
+            self.unlabeled_corpus.instances
+        ) * 10  # Times 10 to avoid underflow
+        entropy = self.u_clasifications * np.log(self.u_clasifications)
+        entropy = np.nan_to_num(entropy)
+        entropy = entropy.sum(axis=1)
+        entropy *= -1
+        self.unlabeled_corpus.add_extra_info('entropy', entropy.tolist())
+        return entropy
+
     def evaluate_test(self):
         """Evaluates the classifier with the testing set.
 
@@ -450,4 +469,3 @@ class ActivePipeline(object):
         self.recorded_precision = loaded_data['recorded_precision']
         self.asked_features = loaded_data['asked_features']
         return True
-
