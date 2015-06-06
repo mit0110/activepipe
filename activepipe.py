@@ -338,22 +338,29 @@ class ActivePipeline(object):
         #           self.classifier.alpha]
         # return np.array(res[:self.number_of_features])
 
-    def calculate_entropy(self):
-        """Calculates the entropy of non labeled instances.
+    def calculate_entropy(self, start=0, end=None, store=True):
+        """Calculates the entropy of non labeled instances by shard.
 
-        Stores it as extra info.
+        Args:
+            start: the index where the shard starts.
+            end: the index (non included) where the shard ends.
+            store: if True, saves the entropy (converted to list) into
+            an extra info field of the corpus.
 
         Returns:
             An array like with the calculation of entropy.
         """
+        if end != None:
+            end = len(self.unlabeled_corpus)
         self.u_clasifications = self.classifier.predict_proba(
-            self.unlabeled_corpus.instances
+            self.unlabeled_corpus.instances[start:end]
         ) * 10  # Times 10 to avoid underflow
         entropy = self.u_clasifications * np.log(self.u_clasifications)
         entropy = np.nan_to_num(entropy)
         entropy = entropy.sum(axis=1)
         entropy *= -1
-        self.unlabeled_corpus.add_extra_info('entropy', entropy.tolist())
+        if store:
+            self.unlabeled_corpus.add_extra_info('entropy', entropy.tolist())
         return entropy
 
     def evaluate_test(self):
