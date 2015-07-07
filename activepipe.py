@@ -1,3 +1,4 @@
+import copy
 import pickle
 import numpy as np
 
@@ -73,9 +74,10 @@ class ActivePipeline(object):
         self.new_instances = 0
         self.new_features = 0
         self.classes = []
+        self.extra_metrics = {}
         self._train()
-        self._get_feature_corpus()
-        self._build_feature_boost()
+        # self._get_feature_corpus()
+        # self._build_feature_boost()
 
     def _set_config(self, config):
         """Sets the keys of config+default_config dict as an attribute of self.
@@ -87,11 +89,8 @@ class ActivePipeline(object):
 
     def _get_corpus(self):
         self.training_corpus = Corpus.load_from_file(self.training_corpus_f)
-
         self.unlabeled_corpus = Corpus.load_from_file(self.u_corpus_f)
-
         self.test_corpus = Corpus.load_from_file(self.test_corpus_f)
-
         self.user_corpus = Corpus()
 
     def _get_feature_corpus(self):
@@ -148,6 +147,11 @@ class ActivePipeline(object):
         except ValueError, AttributeError:
             import ipdb; ipdb.set_trace()
         self.classes = self.classifier.classes_.tolist()
+        self.save_recorded_precision()
+        self.new_instances = 0
+        self.new_features = 0
+
+    def save_recorded_precision(self):
         self.recorded_precision.append({
             'testing_precision' : self.evaluate_test(),
             'training_precision' : self.evaluate_training(),
@@ -161,10 +165,9 @@ class ActivePipeline(object):
                 self.predict(self.test_corpus.instances)
             ),
             'entropy': self.unlabeled_corpus.extra_info.get('entropy'),
-            'classes': self.classes
+            'classes': self.classes,
+            'extra_metrics': copy.copy(self.extra_metrics),
         })
-        self.new_instances = 0
-        self.new_features = 0
 
     def _expectation_maximization(self):
         """Performs one cycle of expectation maximization.
@@ -354,8 +357,9 @@ class ActivePipeline(object):
             end = len(self.unlabeled_corpus)
         self.u_clasifications = self.classifier.predict_proba(
             self.unlabeled_corpus.instances[start:end]
-        ) * 10  # Times 10 to avoid underflow
-        entropy = self.u_clasifications * np.log(self.u_clasifications)
+        )
+        u_class = self.u_clasifications * 10  # Times 10 to avoid underflow
+        entropy = u_class * np.log(u_class)
         entropy = np.nan_to_num(entropy)
         entropy = entropy.sum(axis=1)
         entropy *= -1
@@ -431,7 +435,9 @@ class ActivePipeline(object):
         """
         if not filename:
             return False
-        if not (len(self.user_corpus) != None or self.user_features != None):
+        # if not (len(self.user_corpus) != None or self.user_features != None):
+        #     return False
+        if len(self.user_corpus) == None:
             return False
 
         f = open(filename, 'w')
