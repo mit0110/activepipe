@@ -33,6 +33,7 @@ class FeatSVC(SVC):
         self : object
             Returns self.
         """
+        print 'lala'
         return super(FeatSVC, self).fit(X, Y, sample_weight)
 
     def _information_gain(self):

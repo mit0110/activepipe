@@ -166,6 +166,7 @@ class ActivePipeline(object):
             ),
             'entropy': self.unlabeled_corpus.extra_info.get('entropy'),
             'classes': self.classes,
+            'ig': self.classifier.feat_information_gain,
             'extra_metrics': copy.copy(self.extra_metrics),
         })
 
