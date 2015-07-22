@@ -8,6 +8,7 @@ class FeatSVC(SVC):
     """A SVC classifier that can be trained using labeled features.
     """
     alpha = 1
+    feat_information_gain = []
 
     def fit(self, X, Y, sample_weight=None, features=None):
         """Fit Naive Bayes classifier according to X, y
@@ -33,7 +34,7 @@ class FeatSVC(SVC):
         self : object
             Returns self.
         """
-        print 'lala'
+        print "training"
         return super(FeatSVC, self).fit(X, Y, sample_weight)
 
     def _information_gain(self):

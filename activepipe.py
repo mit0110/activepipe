@@ -131,21 +131,18 @@ class ActivePipeline(object):
 
         Uses the training set plus the new vectors and new features.
         """
-        try:
-            if len(self.user_corpus):
-                self.classifier.fit(
-                    vstack((self.training_corpus.instances,
-                            self.user_corpus.instances), format='csr'),
-                    (self.training_corpus.primary_targets +
-                     self.user_corpus.primary_targets),
-                    features=self.user_features
-                )
-            else:
-                self.classifier.fit(self.training_corpus.instances,
-                                    self.training_corpus.primary_targets,
-                                    features=self.user_features)
-        except ValueError, AttributeError:
-            import ipdb; ipdb.set_trace()
+        if len(self.user_corpus):
+            self.classifier.fit(
+                vstack((self.training_corpus.instances,
+                        self.user_corpus.instances), format='csr'),
+                (self.training_corpus.primary_targets +
+                 self.user_corpus.primary_targets),
+                features=self.user_features
+            )
+        else:
+            self.classifier.fit(self.training_corpus.instances,
+                                self.training_corpus.primary_targets,
+                                features=self.user_features)
         self.classes = self.classifier.classes_.tolist()
         self.save_recorded_precision()
         self.new_instances = 0
@@ -291,7 +288,7 @@ class ActivePipeline(object):
             entropy = np.nan_to_num(entropy)
             entropy = entropy.sum(axis=1)
             entropy *= -1
-            # self.unlabeled_corpus.add_extra_info('entropy', entropy.tolist())
+            self.unlabeled_corpus.add_extra_info('entropy', entropy.tolist())
 
             # Select the instance
             index = np.argmin(entropy)
